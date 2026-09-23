@@ -252,17 +252,156 @@ if __name__ == "__main__":
 
 ## Task 7: Error Handling
 
-See screenshots attached (e.g. `7c_error_handling_interface.png`).
+### Activity 1: HTTP 400 Handling (7a_error_handling_function)
+
+Here is the code of `EmotionDetection/emotion_detection.py` showing the updated `emotion_detector` function for status code 400 (saved in file `7a_error_handling_function`):
+
+```python
+import requests
+
+def emotion_detector(text_to_analyse):
+    """
+    Detects emotions in the given text using Watson NLP Emotion API.
+    """
+    empty_result = {
+        'anger': None,
+        'disgust': None,
+        'fear': None,
+        'joy': None,
+        'sadness': None,
+        'dominant_emotion': None
+    }
+
+    if not text_to_analyse or not text_to_analyse.strip():
+        return empty_result
+
+    url = ('https://sn-watson-emotion.labs.skills.network/v1/'
+           'watson.runtime.nlp.v1/NlpService/EmotionPredict')
+    headers = {
+        'grpc-metadata-mm-model-id': 'emotion_aggregated-workflow_lang_en_stock'
+    }
+    input_json = {"raw_document": {"text": text_to_analyse}}
+
+    response = requests.post(url, json=input_json, headers=headers)
+
+    if response.status_code == 400:
+        return empty_result
+
+    response_json = response.json()
+
+    emotions = response_json['emotionPredictions'][0]['emotion']
+
+    anger_score = emotions['anger']
+    disgust_score = emotions['disgust']
+    fear_score = emotions['fear']
+    joy_score = emotions['joy']
+    sadness_score = emotions['sadness']
+
+    emotion_scores = {
+        'anger': anger_score,
+        'disgust': disgust_score,
+        'fear': fear_score,
+        'joy': joy_score,
+        'sadness': sadness_score
+    }
+
+    dominant_emotion = max(emotion_scores, key=emotion_scores.get)
+
+    return {
+        'anger': anger_score,
+        'disgust': disgust_score,
+        'fear': fear_score,
+        'joy': joy_score,
+        'sadness': sadness_score,
+        'dominant_emotion': dominant_emotion
+    }
+```
+
+### Activity 2: Blank Input Handling (7b_error_handling_server)
+
+Here is the code of `server.py` showing the handling of blank input errors (saved in file `7b_error_handling_server`):
+
+```python
+@app.route("/emotionDetector")
+def emo_detector():
+    text_to_analyse = request.args.get('textToAnalyze')
+
+    if not text_to_analyse or not text_to_analyse.strip():
+        return "Invalid text! Please try again."
+
+    result = emotion_detector(text_to_analyse)
+
+    if result['dominant_emotion'] is None:
+        return "Invalid text! Please try again."
+
+    return (
+        f"For the given statement, the system response is "
+        f"'anger': {result['anger']}, "
+        f"'disgust': {result['disgust']}, "
+        f"'fear': {result['fear']}, "
+        f"'joy': {result['joy']} and "
+        f"'sadness': {result['sadness']}. "
+        f"The dominant emotion is <b>{result['dominant_emotion']}</b>."
+    )
+```
 
 ## Task 8: Static Code Analysis
 
-### Activity 1: Static Analysis Code
-Command used:
-```bash
-python3 -m pylint server.py EmotionDetection
+### Activity 1: Static Analysis Code (8a_server_modified)
+
+Here is the code of `server.py` used for static code analysis (saved in file `8a_server_modified`):
+
+```python
+"""
+Flask web application for the Emotion Detector.
+Provides a web interface to analyze emotions in text using Watson NLP.
+"""
+
+from flask import Flask, request, render_template
+from EmotionDetection.emotion_detection import emotion_detector
+
+app = Flask("Emotion Detector")
+
+
+@app.route("/emotionDetector")
+def emo_detector():
+    """
+    Route to analyze emotion from text query parameter.
+    """
+    text_to_analyse = request.args.get('textToAnalyze')
+
+    if not text_to_analyse or not text_to_analyse.strip():
+        return "Invalid text! Please try again."
+
+    result = emotion_detector(text_to_analyse)
+
+    if result['dominant_emotion'] is None:
+        return "Invalid text! Please try again."
+
+    return (
+        f"For the given statement, the system response is "
+        f"'anger': {result['anger']}, "
+        f"'disgust': {result['disgust']}, "
+        f"'fear': {result['fear']}, "
+        f"'joy': {result['joy']} and "
+        f"'sadness': {result['sadness']}. "
+        f"The dominant emotion is <b>{result['dominant_emotion']}</b>."
+    )
+
+
+@app.route("/")
+def render_index_page():
+    """Render the main index page."""
+    return render_template('index.html')
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
 ```
 
-### Activity 2: Static Analysis Output
+### Activity 2: Static Analysis Output (8b_static_code_analysis)
+
+Terminal output after running static code analysis (saved in file `8b_static_code_analysis`):
 
 ```text
 user@computer:/home/project/final_project$ python3 -m pylint server.py EmotionDetection

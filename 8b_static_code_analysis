@@ -1,0 +1,4 @@
+﻿user@computer:/home/project/final_project$ python3 -m pylint server.py EmotionDetection
+
+--------------------------------------------------------------------
+Your code has been rated at 10.00/10 (previous run: 10.00/10, +0.00)
